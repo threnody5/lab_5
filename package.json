@@ -4,7 +4,7 @@
   "description": "Lab5",
   "main": "server.js",
   "author": {
-    "name": ""
+    "name": "William Watson"
   },
   "dependencies": {
     "express": "^4.17.1",

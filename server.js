@@ -6,26 +6,14 @@ let express = require("express");
 
 let fs = require("fs");
 
-var URL;
-
-fs.readFile('urls.txt', {encoding: 'utf8'}, function (err, data) {
+// Reads the file synchronously so the URL variable is declared before being called by the IIFE
+var URL = fs.readFileSync('urls.txt', { encoding: 'utf8' }, function (err, data) {
     if (err) {
         console.log(err);
     } else {
         URL = data;
-        console.log(URL);
     }
 })
-
-var jsObject;
-
-const getJSON = (URL) => {
-
-}
-
-// let URLString = URL.toString();
-
-// console.log(URLString);
 
 // load the add-in xmlhttprequest and create XMLHttpRequest object
 let XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
@@ -38,40 +26,47 @@ let port = process.env.PORT || 1337;
 
 // create a "get" event handler function
 // request and response object references (req, res)
-app.get("/", function (reqNode, resNode) {
+
+// The function expression coded as in IIFE so it's called at start up
+const getJSON = (() => {
+
     var test = new Promise(function (resolve, reject) {
         var req = new XMLHttpRequest();
 
-        req.open('GET', 'https://gd2.mlb.com/components/game/mlb/year_2018/month_07/day_08/master_scoreboard.json');
+        req.open('GET', URL);
         req.onload = function () {
             if (req.status === 200) {
                 resolve(req.responseText);
-                jsObject = JSON.parse(req.responseText);
-                console.log(jsObject);
+                jsObject = JSON.stringify(req.responseText);
             }
             else {
                 reject(req.statusText);
             }
         };
-
         req.onerror = function () {
             reject("network error");
         };
-
         req.send();
-    });
 
-    test.then(
-        function (response) {
-            // send JSON string back to browser
-            resNode.send(response);
-            // fs.writeFile()
-        },
-        function (error) {
-            console.error("Request failed: ", error);
-        }
-    );
-});
+        app.get("/", function (reqNode, resNode) {
+            test.then(
+                function (response) {
+                    // Writing the returned JSON string to the JSON.txt file, and sends a message to the browser and console declaring the JSON string has been saved to the file
+                    fs.writeFile('JSON.txt', jsObject, (err) => {
+                        if (err) {
+                            resNode.send(err);
+                        }
+                        resNode.send('JSON data saved to file');
+                        console.log('JSON data saved to file');
+                    });
+                },
+                function (error) {
+                    console.error("Request failed: ", error);
+                }
+            )
+        });
+    });
+})(URL);
 
 // start the server
 app.listen(port, function () {
